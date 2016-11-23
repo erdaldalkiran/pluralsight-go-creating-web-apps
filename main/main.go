@@ -1,8 +1,9 @@
 package main
 
 import (
-	"io/ioutil"
+	"bufio"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -18,7 +19,10 @@ type myHandler struct {
 
 func (this *myHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	path := "public" + req.URL.Path
-	data, err := ioutil.ReadFile(path)
+	file, err := os.Open(path)
+	defer func() {
+		file.Close()
+	}()
 
 	if err != nil {
 		resp.WriteHeader(404)
@@ -26,7 +30,9 @@ func (this *myHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	resp.Header().Add("Content-Type", getContentType(path))
-	resp.Write(data)
+
+	bufferedReader := bufio.NewReader(file)
+	bufferedReader.WriteTo(resp)
 }
 
 func getContentType(file string) string {
@@ -42,6 +48,8 @@ func getContentType(file string) string {
 		contentType = "application/javascript"
 	case "png":
 		contentType = "image/png"
+	case "mp4":
+		contentType = "video/mp4"
 	default:
 		contentType = "text/plaing"
 
