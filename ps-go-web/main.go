@@ -29,6 +29,8 @@ func main() {
 		var context interface{}
 		if requestedFile == "home" {
 			context = viewmodels.NewHome()
+		} else if requestedFile == "categories" {
+			context = viewmodels.NewCategories()
 		}
 
 		template.Execute(resp, context)
