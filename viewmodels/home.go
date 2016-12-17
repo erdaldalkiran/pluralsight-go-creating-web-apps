@@ -1,13 +1,14 @@
 package viewmodels
 
 type home struct {
-	Title  string
-	Active string
+	PageMetaData pageMetaData
 }
 
 func NewHome() *home {
 	return &home{
-		Title:  "Lemonade Stand Society",
-		Active: "home",
+		PageMetaData: pageMetaData{
+			Title:  "Erdasl was here!!!",
+			Active: "home",
+		},
 	}
 }

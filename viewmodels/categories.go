@@ -1,9 +1,8 @@
 package viewmodels
 
 type categories struct {
-	Title      string
-	Active     string
-	Categories []category
+	PageMetaData pageMetaData
+	Categories   []category
 }
 
 type category struct {
@@ -15,8 +14,10 @@ type category struct {
 
 func NewCategories() categories {
 	return categories{
-		Title:  "Lemonade Stand Society - Shop",
-		Active: "shop",
+		PageMetaData: pageMetaData{
+			Title:  "Lemonade Stand Society - Shop",
+			Active: "shop",
+		},
 		Categories: []category{
 			category{
 				ImageUrl: "lemon.png",

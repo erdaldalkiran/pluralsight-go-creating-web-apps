@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-{{template "head.html" .}}
+{{template "head.html" .PageMetaData}}
 <body>
-	{{template "header.html" .}}
+	{{template "header.html" .PageMetaData}}
 	{{range .Categories}}
 		<div class="row category 
 					{{if eq .IsOrientRight true}}
