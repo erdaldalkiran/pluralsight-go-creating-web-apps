@@ -7,23 +7,31 @@ import (
 	"strings"
 	"text/template"
 
-	"math"
-
 	"github.com/erdalkiran/pluralsight-go-creating-web-apps/constants"
+	"github.com/erdalkiran/pluralsight-go-creating-web-apps/viewmodels"
+)
+
+const (
+	TEMPLATES_FOLDER = "templates"
 )
 
 func main() {
-	ciko := math.Pi
 	templates := populateTemplates()
 	http.HandleFunc(constants.Paths.ROOT(), func(resp http.ResponseWriter, req *http.Request) {
 		requestedFile := req.URL.Path[1:]
+
 		template := templates.Lookup(requestedFile + ".html")
 		if template == nil {
 			resp.WriteHeader(404)
 			return
 		}
 
-		template.Execute(resp, nil)
+		var context interface{}
+		if requestedFile == "home" {
+			context = viewmodels.NewHome()
+		}
+
+		template.Execute(resp, context)
 	})
 
 	http.HandleFunc(constants.Paths.CSS(), serveResource)
@@ -63,8 +71,14 @@ func getContentType(path string) string {
 }
 
 func populateTemplates() *template.Template {
+	templatePaths := getTemplatePaths(TEMPLATES_FOLDER)
+	result := template.New("mainTemplate")
+	result.ParseFiles(templatePaths...)
 
-	basePath := "templates"
+	return result
+}
+
+func getTemplatePaths(basePath string) []string {
 	templateFolder, err := os.Open(basePath)
 	defer templateFolder.Close()
 
@@ -76,20 +90,13 @@ func populateTemplates() *template.Template {
 	templatePaths := new([]string)
 	for _, pathInfo := range templatePathsRaw {
 		if pathInfo.IsDir() {
+			dirTemplatePaths := getTemplatePaths(basePath + "/" + pathInfo.Name())
+			*templatePaths = append(*templatePaths, dirTemplatePaths...)
 			continue
 		}
 
 		*templatePaths = append(*templatePaths, basePath+"/"+pathInfo.Name())
 	}
-	result := template.New("mainTemplate")
-	result.ParseFiles(*templatePaths...)
 
-	return result
-}
-
-type ciko struct {
-}
-
-type hede struct {
-	ciko ciko
+	return *templatePaths
 }
