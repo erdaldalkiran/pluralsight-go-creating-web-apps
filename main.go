@@ -7,6 +7,10 @@ import (
 	"strings"
 	"text/template"
 
+	"fmt"
+
+	"log"
+
 	"github.com/erdalkiran/pluralsight-go-creating-web-apps/constants"
 	"github.com/erdalkiran/pluralsight-go-creating-web-apps/viewmodels"
 )
@@ -16,30 +20,45 @@ const (
 )
 
 func main() {
-	templates := populateTemplates()
+	templates, err := populateTemplates()
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
 	http.HandleFunc(constants.Paths.ROOT(), func(resp http.ResponseWriter, req *http.Request) {
 		requestedFile := req.URL.Path[1:]
 
 		template := templates.Lookup(requestedFile + ".html")
 		if template == nil {
+			fmt.Println("unable to find template")
 			resp.WriteHeader(404)
 			return
 		}
 
-		var context interface{}
-		if requestedFile == "home" {
-			context = viewmodels.NewHome()
-		} else if requestedFile == "categories" {
-			context = viewmodels.NewCategories()
+		err := template.Execute(resp, getContext(requestedFile))
+		if err != nil {
+			log.Fatal(err)
 		}
-
-		template.Execute(resp, context)
 	})
 
 	http.HandleFunc(constants.Paths.CSS(), serveResource)
 	http.HandleFunc(constants.Paths.IMAGE(), serveResource)
 
 	http.ListenAndServe(":8000", nil)
+}
+
+func getContext(requestedFile string) interface{} {
+	var context interface{}
+	if requestedFile == "home" {
+		context = viewmodels.NewHome()
+	} else if requestedFile == "categories" {
+		context = viewmodels.NewCategories()
+	} else if requestedFile == "products" {
+		context = viewmodels.NewProducts()
+	} else if requestedFile == "product" {
+		context = viewmodels.NewProduct()
+	}
+	return context
 }
 
 func serveResource(resp http.ResponseWriter, req *http.Request) {
@@ -72,27 +91,39 @@ func getContentType(path string) string {
 	return contentType
 }
 
-func populateTemplates() *template.Template {
-	templatePaths := getTemplatePaths(TEMPLATES_FOLDER)
-	result := template.New("mainTemplate")
-	result.ParseFiles(templatePaths...)
-
-	return result
-}
-
-func getTemplatePaths(basePath string) []string {
-	templateFolder, err := os.Open(basePath)
-	defer templateFolder.Close()
-
+func populateTemplates() (*template.Template, error) {
+	templatePaths, err := getTemplatePaths(TEMPLATES_FOLDER)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+	result := template.New("mainTemplate")
+	_, err = result.ParseFiles(templatePaths...)
+	if err != nil {
+		return nil, err
 	}
 
-	templatePathsRaw, _ := templateFolder.Readdir(-1)
+	return result, nil
+}
+
+func getTemplatePaths(basePath string) ([]string, error) {
+	templateFolder, err := os.Open(basePath)
+	if err != nil {
+		return nil, err
+	}
+
+	defer templateFolder.Close()
+
+	templatePathsRaw, err := templateFolder.Readdir(-1)
+	if err != nil {
+		return nil, err
+	}
 	templatePaths := new([]string)
 	for _, pathInfo := range templatePathsRaw {
 		if pathInfo.IsDir() {
-			dirTemplatePaths := getTemplatePaths(basePath + "/" + pathInfo.Name())
+			dirTemplatePaths, err := getTemplatePaths(basePath + "/" + pathInfo.Name())
+			if err != nil {
+				return nil, err
+			}
 			*templatePaths = append(*templatePaths, dirTemplatePaths...)
 			continue
 		}
@@ -100,5 +131,5 @@ func getTemplatePaths(basePath string) []string {
 		*templatePaths = append(*templatePaths, basePath+"/"+pathInfo.Name())
 	}
 
-	return *templatePaths
+	return *templatePaths, nil
 }
